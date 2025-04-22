@@ -50,8 +50,8 @@ def _is_userhome_local(path):
     while path != os.path.sep:
         path, head = os.path.split(path)
         path_dirs.append(head)
-    return len(path_dirs) >= 4 and path_dirs[-1] == "home" and path_dirs[-3] == ".local"
-
+    # return len(path_dirs) >= 4 and path_dirs[-1] == "home" and path_dirs[-3] == ".local"
+    return False
 
 # Remove duplicates and maintain ordering
 _seen = set()
