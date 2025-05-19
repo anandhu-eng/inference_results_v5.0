@@ -216,7 +216,7 @@ def generate_config(benchmark, scenario, system):
                         default_value = dict()
                     else:
                         default_value = field.value_type()  # Use default constructor
-                    lines.append(f"#    {field_name}: {field.value_type.__name__} = {repr(default_value)}\n")
+                    #lines.append(f"#    {field_name}: {field.value_type.__name__} = {repr(default_value)}\n")
                     dynamic_fields =  [ "qps", "expected_latency", "gpu_batch_size" ]
                     if any(f in field_name for f in dynamic_fields):
                         lines.append(f"    {field_name}: {field.value_type.__name__} = {field.value_type.__name__}(os.environ.get('{field_name}', {repr(default_value)}))\n")
@@ -249,27 +249,49 @@ def generate_configs(system):
                 generate_config(benchmark, scenario, system)
 
 
-def yes_no_prompt(message, default=True):
-    choices = ["", "y", "n"]
+def yes_no_prompt(message, default=True, timeout=10):
+    # Set default choices based on the default parameter
+    choices = ["y", "n"]
     if default is True:
-        choice_str = "[y/n]"
+        choice_str = "[Y/n]"  # Capital Y to indicate default 'yes'
     elif default is False:
-        choice_str = "[y/n]"
+        choice_str = "[y/N]"  # Capital N to indicate default 'no'
     elif default is None:
-        choice_str = "[y/n]"
-        choices = ["y", "n"]
+        choice_str = "[y/n]"  # No default option, must choose
     else:
         raise ValueError(f"Invalid option for default prompt choice: {default}")
 
-    resp = None
-    while resp is None or resp.lower() not in choices:
-        resp = input(f"{message} {choice_str}: ")
-
-    if resp == "":
+    # Check if running in a non-interactive shell
+    if os.getenv("CI") == "true" or not sys.stdin.isatty():
+        # In a non-interactive environment, immediately return the default value
+        print(f"\nNon-interactive environment detected. Defaulting to {'Yes' if default else 'No'}.")
         return default
-    else:
-        return resp == "y"
+    
+    # Display the prompt message
+    sys.stdout.write(f"{message} {choice_str}: ")
+    sys.stdout.flush()
 
+    # Use select to wait for input with a timeout
+    ready, _, _ = select.select([sys.stdin], [], [], timeout)
+    if ready:
+        # If input is provided within the timeout, read it
+        resp = sys.stdin.readline().strip().lower()
+        if resp == "":
+            return default  # No input, return the default
+        elif resp in choices:
+            return resp == "y"  # Return True if 'y', False if 'n'
+        else:
+            # Handle invalid inputs by prompting again
+            print("Invalid input. Please enter 'y' or 'n'.")
+            return yes_no_prompt(message, default, timeout)  # Reprompt on invalid input
+    else:
+        # Timeout occurred, return the default value
+        print(f"\nNo input received in {timeout} seconds. Defaulting to {'Yes' if default else 'No'}.")
+        return default
+
+def get_system_hostname():
+    """Get the system's hostname."""
+    return socket.gethostname()
 
 def main():
     # Inform the user on what this script does.
@@ -289,7 +311,11 @@ def main():
         s += "\n" + "!" * 80
         print(s)
 
-        resp = yes_no_prompt("Continue?")
+        if os.environ.get("MLC_CUSTOM_SYSTEM_NVIDIA", "").lower() in [ "1", "yes", "true" ]:
+            resp = True
+        else:
+            resp = yes_no_prompt("Continue?")
+            
         if not resp:
             print("Exiting.")
             return
@@ -319,7 +345,40 @@ def main():
     sys_id = DETECTED_SYSTEM.extras.get("id", "")
 
     while not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
-        sys_id = input("=> Specify the system ID to use for the current system: ")
+        # Get the system's hostname to use as the default
+        hostname = get_system_hostname()
+        mlc_sys_name = os.environ.get('MLC_NVIDIA_SYSTEM_NAME')
+        sys_name_assigned = False
+        # Check if the shell is interactive
+        if not mlc_sys_name and os.getenv("CI") != "false" and sys.stdin.isatty():
+            # Prompt the user for input with a 10-second timeout
+            sys.stdout.write(f"=> Specify the system ID to use for the current system [Default: {hostname}]: ")
+            sys.stdout.flush()
+            # Wait for user input with a timeout of 10 seconds
+            ready, _, _ = select.select([sys.stdin], [], [], 30)
+            if ready:
+                # Read user input if provided within the timeout
+                sys_id = sys.stdin.readline().strip()
+                # If input is empty, use the system hostname
+                if sys_id == "":
+                    sys_id = hostname
+            else:
+                # Timeout occurred, default to the system hostname
+                print(f"\nNo input received in 30 seconds. Using default system ID: {hostname}")
+                sys_id = hostname
+                sys_name_assigned = True
+        else:
+            # Non-interactive shell or name given : directly use the default hostname
+            print(f"=> Non-interactive shell detected. Using default system ID: {hostname}")
+            sys_id = os.environ.get('MLC_NVIDIA_SYSTEM_NAME', os.environ.get('MLC_HW_NAME', get_system_hostname()))
+            sys_name_assigned = True
+            if sys_name_assigned: 
+                if not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
+                    sys_id = f"Nvidia_{sys_id}"
+                if not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
+                    print(f"The given name {sys_id} is not suitable. Using 'Nvidia_test_system' as sys_id")
+                    sys_id = "Nvidia_test_system"
+                break
 
         # Check if the chosen name conflicts with an existing name
         if sys_id in custom_systems:
