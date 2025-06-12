@@ -151,7 +151,7 @@ def main(args):
     model.to(device)
 
     print("... Loading checkpoint")
-    ckpt = torch.load(args.input)
+    ckpt = torch.load(args.input, weights_only=False)
 
     # For some reason the batchnorms in older checkpoint files during development do not have the same sizes as the
     # module object. The checkpoint batchnorms have a size of [1, N, 1, 1], while the model batchnorms just have a size
