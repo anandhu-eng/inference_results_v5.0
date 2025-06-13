@@ -28,13 +28,17 @@ fi
 MODEL_DIR=/work/build/models
 DATA_DIR=/work/build/data
 
-# Download the fp16 raw weights of MLCommon hosted HF checkpoints
-download_file models SDXL/official_pytorch/fp16 \
-    https://cloud.mlcommons.org/index.php/s/LCdW5RM6wgGWbxC/download \
-    stable_diffusion_fp16.zip
+if [ -z "${SDXL_CHECKPOINT_PATH:-}" ]; then
+    # Download the fp16 raw weights of MLCommon hosted HF checkpoints
+    download_file models SDXL/official_pytorch/fp16 \
+        https://cloud.mlcommons.org/index.php/s/LCdW5RM6wgGWbxC/download \
+        stable_diffusion_fp16.zip
 
-unzip ${MODEL_DIR}/SDXL/official_pytorch/fp16/stable_diffusion_fp16.zip \
-    -d ${MODEL_DIR}/SDXL/official_pytorch/fp16/
+    unzip ${MODEL_DIR}/SDXL/official_pytorch/fp16/stable_diffusion_fp16.zip \
+        -d ${MODEL_DIR}/SDXL/official_pytorch/fp16/
+else
+    echo "SDXL_CHECKPOINT_PATH is set to: ${SDXL_CHECKPOINT_PATH}, skipping download"
+fi
 
 md5sum ${MODEL_DIR}/SDXL/official_pytorch/fp16/stable_diffusion_fp16/checkpoint_pipe/text_encoder/model.safetensors | grep "81b87e641699a4cd5985f47e99e71eeb"
 if [ $? -ne 0 ]; then
