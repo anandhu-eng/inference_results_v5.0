@@ -82,6 +82,10 @@ then
         python3 /work/code/stable-diffusion-xl/modelopt/quantize_unet.py --model ${MODEL_DIR}/SDXL/official_pytorch/fp16/stable_diffusion_fp16/checkpoint_pipe/ --batch-size 1 \
             --calib-size 500 --n_steps 20 --calib-data /work/code/stable-diffusion-xl/modelopt/captions.tsv --latent /work/code/stable-diffusion-xl/modelopt/latents.pt \
             --exp_name ${MODEL_DIR}/SDXL/modelopt_models/unetxl.fp8/unetxl.fp8.pt --onnx_dir ${MODEL_DIR}/SDXL/modelopt_models/unetxl.fp8
+        if [ $? -ne 0 ]; then
+            echo "SDXL UNet fp8 quantization and export failed."
+            exit 1
+        fi
         echo "Finished SDXL UNet fp8 quantization and export"
     fi
 
@@ -90,9 +94,17 @@ then
     python3 /work/code/stable-diffusion-xl/modelopt/quantize_vae.py --model ${MODEL_DIR}/SDXL/official_pytorch/fp16/stable_diffusion_fp16/checkpoint_pipe/ --batch-size 1 \
         --format int8 --calib-size 64 --n_steps 20 --calib-data /work/code/stable-diffusion-xl/modelopt/captions.tsv --alpha 1.0  \
         --quant-level 3.0 --latent /work/code/stable-diffusion-xl/modelopt/latents.pt --exp_name ${MODEL_DIR}/SDXL/modelopt_models/vae.int8/vae.int8.pt
+    if [ $? -ne 0 ]; then
+            echo "SDXL VAE quantization and export failed."
+            exit 1
+    fi
     echo "Exporting SDXL fp32-int8 VAE onnx. The process will take ~1 min on DGX H100 or a few hours on Orin"
     python /work/code/stable-diffusion-xl/modelopt/export_vae.py --model ${MODEL_DIR}/SDXL/official_pytorch/fp16/stable_diffusion_fp16/checkpoint_pipe/ \
         --quantized-ckpt ${MODEL_DIR}/SDXL/modelopt_models/vae.int8/vae.int8.pt --format int8 --quant-level 3.0 --onnx-dir ${MODEL_DIR}/SDXL/modelopt_models/vae.int8
+    if [ $? -ne 0 ]; then
+            echo "SDXL VAE int8 quantization and export failed."
+            exit 1
+    fi
     echo "Finished SDXL VAE int8 quantization and export"
     echo "SDXL model quantization complete!"
 else 
