@@ -376,13 +376,14 @@ def main():
             print(f"=> Non-interactive shell detected. Using default system ID: {hostname}")
             sys_id = os.environ.get('MLC_NVIDIA_SYSTEM_NAME', os.environ.get('MLC_HW_NAME', get_system_hostname()))
             sys_name_assigned = True
-            if sys_name_assigned: 
-                if not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
-                    sys_id = f"Nvidia_{sys_id}"
-                if not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
-                    print(f"The given name {sys_id} is not suitable. Using 'Nvidia_test_system' as sys_id")
-                    sys_id = "Nvidia_test_system"
-                break
+            
+        if sys_name_assigned: 
+            if not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
+                sys_id = f"Nvidia_{sys_id}"
+            if not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
+                print(f"The given name {sys_id} is not suitable. Using 'Nvidia_test_system' as sys_id")
+                sys_id = "Nvidia_test_system"
+            break
 
         # Check if the chosen name conflicts with an existing name
         if sys_id in custom_systems:
