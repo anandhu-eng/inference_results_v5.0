@@ -304,6 +304,7 @@ else
 	@echo "Cloning public TRT LLM in $(TRTLLM_DIR) from $(TRTLLM_PUBLIC_URL)"
 	@if [ ! -d $(TRTLLM_DIR) ]; then \
 		echo "Cloning TRT-LLM" \
+			&& git lfs install \
 			&& git clone $(TRTLLM_PUBLIC_URL) $(TRTLLM_DIR); \
 	fi
 	@echo "Updating TRT-LLM to $(TRTLLM_PUBLIC_HASH)" \
@@ -386,7 +387,7 @@ build_trt_llm:
 	elif [ -f "/opt/fp4-quantized-modelopt/mixtral-8x7b-instruct-v0.1-tp1pp1-fp4-e7.25.tar.gz" ]; then \
 		echo "Found model archive at /opt/fp4-quantized-modelopt/mixtral-8x7b-instruct-v0.1-tp1pp1-fp4-e7.25.tar.gz, extracting..."; \
 		mkdir -p /work/build/models/Mixtral/fp4-quantized-modelopt/; \
-		tar -xzf /opt/fp4-quantized-modelopt/mixtral-8x7b-instruct-v0.1-tp1pp1-fp4-e7.25.tar.gz -C /work/build/models/Mixtral/fp4-quantized-modelopt/; \
+		tar -xzf /opt/fp4-quantized-modelopt/mixtral-8x7b-instruct-v0.1-tp1pp1-fp4-e7.25.tar.gz -C /work/build/models/Mixtral/fp4-quantized-modelopt/ --no-same-owner; \
 	else \
 		echo "Model archive not found in /opt, skipping extraction."; \
 	fi
