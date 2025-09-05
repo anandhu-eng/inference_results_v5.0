@@ -351,7 +351,7 @@ def classification_tags(system: System) -> Set[str]:
 DETECTED_SYSTEM = System.detect()[0]
 for name, sys_desc in _system_confs.items():
     if sys_desc.matches(DETECTED_SYSTEM):
-        DETECTED_SYSTEM.extras["id"] = sys_desc.mapping["extras"]["id"]
+        DETECTED_SYSTEM.extras["id"] = sys_desc.mapping["extras"]["id"].replace('-', '_')
         DETECTED_SYSTEM.extras["tags"] = sys_desc.mapping["extras"]["tags"].union(classification_tags(DETECTED_SYSTEM))
         DETECTED_SYSTEM.extras["name"] = name
 
