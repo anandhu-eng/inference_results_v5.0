@@ -62,7 +62,21 @@ CUSTOM_CONFIG_FILE_HEADER = ["# Generated file by scripts/custom_systems/add_cus
 HAS_HIGHACC = [Benchmark.UNET3D, Benchmark.BERT, Benchmark.DLRMv2, Benchmark.GPTJ, Benchmark.LLAMA2, Benchmark.LLAMA2_Interactive]
 HAS_TRITON = [Benchmark.UNET3D, Benchmark.BERT, Benchmark.DLRMv2, Benchmark.ResNet50, Benchmark.Retinanet]
 
+class KnownGPUSpoof:
+    """Spoofs a SystemConfiguration and allows a codestring to be generated based on a KnownGPU enum member"""
 
+    def __init__(self, original, equivalent_known_gpu):
+        for field_name in original.__dataclass_fields__.keys():
+            object.__setattr__(self, field_name, original.__getattribute__(field_name))
+
+        self._known_gpu_enum_member = equivalent_known_gpu
+
+    def codestr(self):
+        return f"{self._known_gpu_enum_member}.value"
+
+    def __hash__(self):
+        return hash(self.codestr())
+        
 def reload_system_list():
     """Reload the code.common.systems.system_list import to re-import the KnownSystem Enum"""
     # Hardware shouldn't have changed, so caches don't need to be invalidated
@@ -391,11 +405,31 @@ def main():
             print(f"=> Please enter a different name")
             sys_id = ""
 
+    DETECTED_SYSTEM.set_id(sys_id)
+    system_copy = deepcopy(DETECTED_SYSTEM)
+
+    # If the detected system is using a KnownGPU and the detected GPU name is not the primary name of the KnownGPU's
+    # AliasedName, __hash__ will return different results. This causes issues with inheritance in configs.
+    # If the GPU is a KnownGPU, reset the value.
+    # TODO: Heterogeneous systems are not supported yet by the harness or builder
+    detected_accelerators = system_copy.accelerator_conf.get_accelerators()
+    if len(detected_accelerators) == 1:
+        accelerator = detected_accelerators[0]
+        for gpu in KnownGPU:
+            if accelerator == gpu.value:
+                print(f"=> Detected GPU is a known GPU: {gpu.name}")
+                new_key = KnownGPUSpoof(accelerator, gpu)
+                system_copy.accelerator_conf.layout[new_key] = system_copy.accelerator_conf.layout[accelerator]
+                del system_copy.accelerator_conf.layout[accelerator]
+                break
+                
     # Add the system to the file
-    custom_systems[sys_id] = DETECTED_SYSTEM.summary_description()
-    assert custom_systems[sys_id].matches(DETECTED_SYSTEM)
+    #custom_systems[sys_id] = DETECTED_SYSTEM.summary_description()
+    #assert custom_systems[sys_id].matches(DETECTED_SYSTEM)
+    lines.insert(-5, f"custom_systems['{sys_id}'] = " + obj_to_codestr(system_copy) + "\n")
     with custom_system_file.open('w') as f:
-        dump(custom_systems, f, indent=2)
+        f.writelines(lines)
+        #dump(custom_systems, f, indent=2)
 
     # Reload system_list so that the KnownSystem Enum updates with our new system
     reload_system_list()
