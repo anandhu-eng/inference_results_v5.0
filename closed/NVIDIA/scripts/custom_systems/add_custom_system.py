@@ -107,7 +107,7 @@ def generate_config(benchmark, scenario, system):
         for workload in workloads[:]:
             workloads.append((HarnessType.Triton, workload[1], workload[2]))
 
-    system_id = system.extras['id']
+    system_id = system.extras['id'].replace('-', '_')
     config_id = system_id.upper()
 
     def _get_config_class_name(workload):
