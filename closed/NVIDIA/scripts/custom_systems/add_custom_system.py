@@ -360,7 +360,7 @@ def main():
     print("=> This string should also start with a letter to be a valid Python enum member name.")
 
     # If DETECTED_SYSTEM already matches an NVIDIA system, its system_id will already be set. Re-use if so.
-    sys_id = DETECTED_SYSTEM.extras.get("id", "")
+    sys_id = DETECTED_SYSTEM.extras.get("id", "").replace('-', '_')
 
     while not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
         # Get the system's hostname to use as the default
@@ -414,7 +414,7 @@ def main():
 
     # Reload system_list so that the KnownSystem Enum updates with our new system
     reload_system_list()
-    print("  => Reloaded system list. Matched System ID:", DETECTED_SYSTEM.extras["id"])
+    print("  => Reloaded system list. Matched System ID:", DETECTED_SYSTEM.extras["id"].replace('-', '_'))
 
     print("=> This script will generate Benchmark Configuration stubs for the detected system.")
     generate_benchmark_confs = yes_no_prompt("Continue?")
