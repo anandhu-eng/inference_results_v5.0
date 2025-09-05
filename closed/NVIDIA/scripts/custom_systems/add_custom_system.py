@@ -405,31 +405,12 @@ def main():
             print(f"=> Please enter a different name")
             sys_id = ""
 
-    DETECTED_SYSTEM.set_id(sys_id)
-    system_copy = deepcopy(DETECTED_SYSTEM)
-
-    # If the detected system is using a KnownGPU and the detected GPU name is not the primary name of the KnownGPU's
-    # AliasedName, __hash__ will return different results. This causes issues with inheritance in configs.
-    # If the GPU is a KnownGPU, reset the value.
-    # TODO: Heterogeneous systems are not supported yet by the harness or builder
-    detected_accelerators = system_copy.accelerator_conf.get_accelerators()
-    if len(detected_accelerators) == 1:
-        accelerator = detected_accelerators[0]
-        for gpu in KnownGPU:
-            if accelerator == gpu.value:
-                print(f"=> Detected GPU is a known GPU: {gpu.name}")
-                new_key = KnownGPUSpoof(accelerator, gpu)
-                system_copy.accelerator_conf.layout[new_key] = system_copy.accelerator_conf.layout[accelerator]
-                del system_copy.accelerator_conf.layout[accelerator]
-                break
                 
     # Add the system to the file
-    #custom_systems[sys_id] = DETECTED_SYSTEM.summary_description()
-    #assert custom_systems[sys_id].matches(DETECTED_SYSTEM)
-    lines.insert(-5, f"custom_systems['{sys_id}'] = " + obj_to_codestr(system_copy) + "\n")
+    custom_systems[sys_id] = DETECTED_SYSTEM.summary_description()
+    assert custom_systems[sys_id].matches(DETECTED_SYSTEM)
     with custom_system_file.open('w') as f:
-        f.writelines(lines)
-        #dump(custom_systems, f, indent=2)
+        dump(custom_systems, f, indent=2)
 
     # Reload system_list so that the KnownSystem Enum updates with our new system
     reload_system_list()
