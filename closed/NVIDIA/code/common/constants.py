@@ -430,7 +430,7 @@ class Precision(AliasedNameEnum):
     """Different numeric precisions that can be used by benchmarks. Not all benchmarks can use all precisions."""
 
     FP4: AliasedName = AliasedName("fp4")
-    FP4: AliasedName = AliasedName("fp8")
+    FP8: AliasedName = AliasedName("fp8")
     INT4: AliasedName = AliasedName("int4")
     INT8: AliasedName = AliasedName("int8")
     FP16: AliasedName = AliasedName("fp16")
