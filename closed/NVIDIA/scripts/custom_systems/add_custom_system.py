@@ -62,7 +62,21 @@ CUSTOM_CONFIG_FILE_HEADER = ["# Generated file by scripts/custom_systems/add_cus
 HAS_HIGHACC = [Benchmark.UNET3D, Benchmark.BERT, Benchmark.DLRMv2, Benchmark.GPTJ, Benchmark.LLAMA2, Benchmark.LLAMA2_Interactive]
 HAS_TRITON = [Benchmark.UNET3D, Benchmark.BERT, Benchmark.DLRMv2, Benchmark.ResNet50, Benchmark.Retinanet]
 
+class KnownGPUSpoof:
+    """Spoofs a SystemConfiguration and allows a codestring to be generated based on a KnownGPU enum member"""
 
+    def __init__(self, original, equivalent_known_gpu):
+        for field_name in original.__dataclass_fields__.keys():
+            object.__setattr__(self, field_name, original.__getattribute__(field_name))
+
+        self._known_gpu_enum_member = equivalent_known_gpu
+
+    def codestr(self):
+        return f"{self._known_gpu_enum_member}.value"
+
+    def __hash__(self):
+        return hash(self.codestr())
+        
 def reload_system_list():
     """Reload the code.common.systems.system_list import to re-import the KnownSystem Enum"""
     # Hardware shouldn't have changed, so caches don't need to be invalidated
@@ -93,7 +107,7 @@ def generate_config(benchmark, scenario, system):
         for workload in workloads[:]:
             workloads.append((HarnessType.Triton, workload[1], workload[2]))
 
-    system_id = system.extras['id']
+    system_id = system.extras['id'].replace('-', '_')
     config_id = system_id.upper()
 
     def _get_config_class_name(workload):
@@ -346,7 +360,7 @@ def main():
     print("=> This string should also start with a letter to be a valid Python enum member name.")
 
     # If DETECTED_SYSTEM already matches an NVIDIA system, its system_id will already be set. Re-use if so.
-    sys_id = DETECTED_SYSTEM.extras.get("id", "")
+    sys_id = DETECTED_SYSTEM.extras.get("id", "").replace('-', '_')
 
     while not SYSTEM_NAME_PATTERN.fullmatch(sys_id):
         # Get the system's hostname to use as the default
@@ -391,6 +405,7 @@ def main():
             print(f"=> Please enter a different name")
             sys_id = ""
 
+                
     # Add the system to the file
     custom_systems[sys_id] = DETECTED_SYSTEM.summary_description()
     assert custom_systems[sys_id].matches(DETECTED_SYSTEM)
@@ -399,7 +414,7 @@ def main():
 
     # Reload system_list so that the KnownSystem Enum updates with our new system
     reload_system_list()
-    print("  => Reloaded system list. Matched System ID:", DETECTED_SYSTEM.extras["id"])
+    print("  => Reloaded system list. Matched System ID:", DETECTED_SYSTEM.extras["id"].replace('-', '_'))
 
     print("=> This script will generate Benchmark Configuration stubs for the detected system.")
     generate_benchmark_confs = yes_no_prompt("Continue?")

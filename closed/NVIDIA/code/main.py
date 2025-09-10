@@ -234,6 +234,6 @@ if __name__ == "__main__":
     if "id" not in DETECTED_SYSTEM.extras:
         logging.info(f"Detected system did not match any known systems. Exiting. {DETECTED_SYSTEM}")
     else:
-        logging.info(f"Detected system ID: {DETECTED_SYSTEM.extras['id']}")
+        logging.info(f"Detected system ID: {DETECTED_SYSTEM.extras['id'].replace('-', '_')}")
         main_args = parse_main_args()
         main(main_args, DETECTED_SYSTEM)
