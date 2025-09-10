@@ -376,7 +376,7 @@ def main():
             ready, _, _ = select.select([sys.stdin], [], [], 30)
             if ready:
                 # Read user input if provided within the timeout
-                sys_id = sys.stdin.readline().strip()
+                sys_id = sys.stdin.readline().strip().replace('-','_')
                 # If input is empty, use the system hostname
                 if sys_id == "":
                     sys_id = hostname
