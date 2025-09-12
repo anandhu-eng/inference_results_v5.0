@@ -304,6 +304,7 @@ else
 	@echo "Cloning public TRT LLM in $(TRTLLM_DIR) from $(TRTLLM_PUBLIC_URL)"
 	@if [ ! -d $(TRTLLM_DIR) ]; then \
 		echo "Cloning TRT-LLM" \
+			&& git lfs install \
 			&& git clone $(TRTLLM_PUBLIC_URL) $(TRTLLM_DIR); \
 	fi
 	@echo "Updating TRT-LLM to $(TRTLLM_PUBLIC_HASH)" \
